@@ -1,0 +1,1446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nostalgic TV</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --green:        #39ff14;
+      --amber:        #ffb300;
+      --cream:        #f5f0e8;
+      --plastic-hi:   #d2d0ce;
+      --plastic-mid:  #b8b6b4;
+      --plastic-lo:   #9a9896;
+      --plastic-dark: #6e6c6a;
+      --plastic-edge: #4e4c4a;
+    }
+
+    body {
+      background: #12100e;
+      background-image:
+        radial-gradient(ellipse at 25% 60%, #1e1a14 0%, transparent 55%),
+        radial-gradient(ellipse at 75% 40%, #101410 0%, transparent 55%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', Courier, monospace;
+      color: var(--cream);
+      padding: 20px;
+      gap: 14px;
+    }
+
+    /* ═══ TV SET ═══════════════════════════════════════════════════════════ */
+    .tv-set { position: relative; width: min(920px, 100%); }
+
+    .tv-body {
+      display: flex;
+      border-radius: 22px 22px 28px 28px;
+      background-image:
+        repeating-linear-gradient(93deg, transparent 0px, transparent 5px, rgba(0,0,0,0.025) 5px, rgba(0,0,0,0.025) 6px),
+        linear-gradient(170deg, var(--plastic-hi) 0%, var(--plastic-mid) 25%, var(--plastic-lo) 60%, var(--plastic-dark) 100%);
+      padding: 22px 18px 26px 22px;
+      box-shadow:
+        inset 0 2px 0 rgba(255,255,255,0.55),
+        inset 2px 0 0 rgba(255,255,255,0.25),
+        inset 0 -2px 0 rgba(0,0,0,0.35),
+        0 8px 0 var(--plastic-edge),
+        0 9px 2px rgba(0,0,0,0.6),
+        6px 16px 40px rgba(0,0,0,0.85),
+        0 30px 80px rgba(0,0,0,0.5);
+    }
+
+    /* ── Screen section ── */
+    .screen-section { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+    .screen-housing {
+      background: #1c1c1c;
+      border-radius: 12px 12px 0 0;
+      padding: 14px 14px 0;
+      box-shadow: inset 0 4px 16px rgba(0,0,0,0.95), inset 0 0 0 1px #0a0a0a;
+    }
+
+    /* The element that goes fullscreen */
+    #tv-screen {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #000;
+      border-radius: 6px 6px 0 0;
+      overflow: hidden;
+      box-shadow:
+        inset 4px 4px 30px rgba(0,0,0,0.9),
+        inset -4px -4px 30px rgba(0,0,0,0.9),
+        inset 0 0 60px rgba(0,0,0,0.5);
+    }
+
+    /* Scanlines */
+    #tv-screen::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(to bottom, transparent 0px, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px);
+      pointer-events: none;
+      z-index: 5;
+      border-radius: 6px 6px 0 0;
+    }
+
+    /* CRT vignette */
+    #tv-screen::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.6) 100%);
+      pointer-events: none;
+      z-index: 6;
+      border-radius: 6px 6px 0 0;
+    }
+
+    /* ── Static canvas ── */
+    #static-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 10;
+      pointer-events: none;
+      image-rendering: pixelated;
+      display: none;
+    }
+
+    /* ── Player ── */
+    #player-container {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+    #player-container video {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      background: #000;
+      border: none;
+    }
+
+    /* ── Phosphor glow ── */
+    .screen-glow {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      z-index: 4;
+      box-shadow: inset 0 0 40px rgba(50,200,80,0.04);
+      border-radius: 6px;
+    }
+
+    /* ── Power On overlay ── */
+    #power-on {
+      position: absolute;
+      inset: 0;
+      background: #000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      z-index: 20;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: background 0.3s;
+    }
+    #power-on:hover { background: #040404; }
+    .power-symbol {
+      font-size: 56px;
+      color: rgba(57,255,20,0.35);
+      text-shadow: 0 0 24px rgba(57,255,20,0.15);
+      transition: all 0.25s;
+      line-height: 1;
+    }
+    #power-on:hover .power-symbol {
+      color: var(--green);
+      text-shadow: 0 0 40px rgba(57,255,20,0.9), 0 0 80px rgba(57,255,20,0.3);
+    }
+    .power-label {
+      font-size: 9px;
+      letter-spacing: 5px;
+      color: rgba(245,240,232,0.18);
+      text-transform: uppercase;
+    }
+    #power-on:hover .power-label { color: rgba(245,240,232,0.5); }
+
+    /* ── Signal Lost ── */
+    #signal-lost {
+      display: none;
+      position: absolute;
+      inset: 0;
+      background: #000;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 15;
+      border-radius: 6px;
+    }
+    #signal-lost.visible { display: flex; }
+    .sl-icon { font-size: 32px; opacity: 0.35; }
+    .sl-text { color: rgba(245,240,232,0.35); font-size: 11px; letter-spacing: 5px; }
+    .sl-sub  { color: rgba(245,240,232,0.18); font-size: 9px; letter-spacing: 2px; }
+
+    /* ── OSD: Channel number (shown briefly on channel change) ── */
+    #osd-channel {
+      position: absolute;
+      top: 12px;
+      right: 14px;
+      z-index: 30;
+      background: rgba(0,0,0,0.75);
+      border: 1px solid rgba(57,255,20,0.3);
+      border-radius: 5px;
+      padding: 6px 12px;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      pointer-events: none;
+    }
+    #osd-channel.visible { display: flex; }
+    .osd-ch-num  { font-size: 36px; font-weight: bold; color: var(--green); text-shadow: 0 0 12px rgba(57,255,20,0.8); line-height: 1; }
+    .osd-ch-name { font-size: 9px; color: rgba(245,240,232,0.6); letter-spacing: 2px; text-transform: uppercase; margin-top: 2px; }
+
+    /* ── OSD: Now Playing bottom bar ── */
+    #osd-nowplaying {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 30;
+      background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+      padding: 20px 14px 10px;
+      display: none;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    #osd-nowplaying.visible { display: block; }
+    #osd-nowplaying.show    { opacity: 1; }
+    .osd-np-inner { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+    .osd-np-ch   { background: var(--green); color: #000; font-weight: bold; font-size: 9px; padding: 2px 6px; border-radius: 2px; flex-shrink: 0; }
+    .osd-np-show { color: rgba(245,240,232,0.5); flex-shrink: 0; }
+    .osd-np-sep  { color: rgba(245,240,232,0.2); flex-shrink: 0; }
+    .osd-np-title{ color: var(--cream); font-weight: bold; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .osd-np-year { color: rgba(245,240,232,0.3); flex-shrink: 0; }
+    .osd-np-rem  { color: var(--amber); flex-shrink: 0; text-shadow: 0 0 6px rgba(255,179,0,0.4); }
+
+    /* ── FULLSCREEN mode ── */
+    #tv-screen:fullscreen,
+    #tv-screen:-webkit-full-screen {
+      width: 100vw !important;
+      height: 100vh !important;
+      aspect-ratio: unset !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+    }
+    #tv-screen:fullscreen::before,
+    #tv-screen:-webkit-full-screen::before,
+    #tv-screen:fullscreen::after,
+    #tv-screen:-webkit-full-screen::after { border-radius: 0; }
+
+    /* Keep OSD visible in fullscreen */
+    #tv-screen:fullscreen #osd-nowplaying.visible,
+    #tv-screen:-webkit-full-screen #osd-nowplaying.visible { display: block; }
+
+    /* ── Now-playing bar below screen ── */
+    .now-playing-bar {
+      background: #141414;
+      border-top: 1px solid #2a2a2a;
+      border-radius: 0 0 12px 12px;
+      padding: 7px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 10px;
+      overflow: hidden;
+      box-shadow: inset 0 1px 0 rgba(57,255,20,0.08);
+    }
+    .np-ch-badge { background: var(--green); color: #000; font-weight: bold; font-size: 9px; padding: 2px 6px; border-radius: 2px; letter-spacing: 1px; flex-shrink: 0; }
+    .np-divider  { color: rgba(245,240,232,0.15); flex-shrink: 0; }
+    .np-show     { color: rgba(245,240,232,0.5); flex-shrink: 0; }
+    .np-title    { color: var(--cream); font-weight: bold; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .np-year     { color: rgba(245,240,232,0.3); flex-shrink: 0; }
+    .np-rem      { color: var(--amber); flex-shrink: 0; text-shadow: 0 0 6px rgba(255,179,0,0.4); }
+    .skip-btn {
+      background: none; border: none;
+      color: rgba(245,240,232,0.2); font-size: 13px; cursor: pointer;
+      padding: 0 2px; flex-shrink: 0; transition: color 0.15s; line-height: 1;
+    }
+    .skip-btn:hover { color: var(--amber); }
+
+    /* ── Bottom strip ── */
+    .tv-bottom-strip {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 4px 0;
+    }
+    .brand-text { font-size: 11px; letter-spacing: 6px; color: rgba(0,0,0,0.3); text-transform: uppercase; text-shadow: 0 1px 0 rgba(255,255,255,0.4); }
+    .bottom-btns { display: flex; gap: 6px; }
+    .phys-btn-small {
+      background: linear-gradient(170deg, var(--plastic-hi), var(--plastic-lo));
+      border: none;
+      border-bottom: 2px solid var(--plastic-edge);
+      border-radius: 4px;
+      color: rgba(0,0,0,0.5);
+      font-family: 'Courier New', monospace;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      padding: 5px 10px;
+      cursor: pointer;
+      text-transform: uppercase;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.35);
+      transition: all 0.08s;
+      text-shadow: 0 1px 0 rgba(255,255,255,0.3);
+    }
+    .phys-btn-small:hover { background: linear-gradient(170deg, #dedddb, var(--plastic-mid)); color: rgba(0,0,0,0.65); }
+    .phys-btn-small:active { transform: translateY(1px); border-bottom-width: 1px; }
+
+    /* ═══ RIGHT CONTROL PANEL ══════════════════════════════════════════════ */
+    .control-panel {
+      width: 96px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0;
+      padding: 16px 10px 12px;
+      margin-left: 16px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.04) 50%, rgba(0,0,0,0.1) 100%);
+      border-radius: 8px;
+      box-shadow:
+        inset 1px 0 0 rgba(255,255,255,0.2),
+        inset -1px 0 0 rgba(0,0,0,0.15),
+        inset 0 1px 0 rgba(255,255,255,0.15);
+    }
+
+    .ctrl-label { font-size: 7px; letter-spacing: 1.5px; text-transform: uppercase; color: rgba(0,0,0,0.5); text-shadow: 0 1px 0 rgba(255,255,255,0.4); text-align: center; margin-bottom: 5px; line-height: 1.2; }
+    .ctrl-group { width: 100%; display: flex; flex-direction: column; align-items: center; margin-bottom: 14px; }
+
+    .phys-btn {
+      width: 52px; height: 22px;
+      background: linear-gradient(170deg, var(--plastic-hi), var(--plastic-lo));
+      border: none; border-bottom: 3px solid var(--plastic-edge);
+      border-radius: 4px;
+      color: rgba(0,0,0,0.5);
+      font-family: 'Courier New', monospace;
+      font-size: 11px; font-weight: bold;
+      cursor: pointer;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 2px 4px rgba(0,0,0,0.35);
+      transition: all 0.08s;
+      user-select: none;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .phys-btn:hover { background: linear-gradient(170deg, #dedddb, var(--plastic-mid)); }
+    .phys-btn:active { transform: translateY(2px); border-bottom-width: 1px; box-shadow: inset 0 1px 0 rgba(255,255,255,0.3); }
+
+    .ch-pair { display: flex; flex-direction: column; gap: 4px; width: 100%; align-items: center; }
+
+    /* Channel LED display */
+    .channel-display {
+      width: 64px; background: #0c0c0c; border-radius: 5px;
+      padding: 5px 6px 4px; text-align: center; margin-bottom: 14px;
+      box-shadow: inset 0 2px 6px rgba(0,0,0,0.9), 0 0 0 1px #080808, 0 0 10px rgba(57,255,20,0.08);
+    }
+    .ch-led-label  { font-size: 7px; letter-spacing: 2px; color: rgba(57,255,20,0.45); text-transform: uppercase; margin-bottom: 2px; }
+    .ch-led-number { font-size: 28px; font-weight: bold; color: var(--green); text-shadow: 0 0 8px rgba(57,255,20,0.9), 0 0 20px rgba(57,255,20,0.4); line-height: 1; letter-spacing: -1px; }
+
+    .knob-section { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 2px; }
+    .knob-label   { font-size: 7px; letter-spacing: 1.5px; color: rgba(0,0,0,0.5); text-transform: uppercase; text-shadow: 0 1px 0 rgba(255,255,255,0.4); }
+    .knob {
+      width: 52px; height: 52px;
+      background: radial-gradient(circle at 38% 32%, var(--plastic-hi), #606060 70%);
+      border-radius: 50%;
+      border: 2px solid var(--plastic-edge);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.4), inset 0 2px 4px rgba(255,255,255,0.25), inset 0 -2px 4px rgba(0,0,0,0.4);
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.25s ease;
+    }
+    .knob::after {
+      content: '';
+      position: absolute;
+      top: 7px; left: 50%;
+      transform: translateX(-50%);
+      width: 5px; height: 5px;
+      background: rgba(0,0,0,0.6);
+      border-radius: 50%;
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.2);
+    }
+
+    .power-led {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #1a3a1a;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
+      margin-top: auto;
+      transition: all 0.4s;
+    }
+    .power-led.on { background: #00dd00; box-shadow: 0 0 6px #00ff00, 0 0 14px rgba(0,255,0,0.5), inset 0 1px 2px rgba(255,255,255,0.4); }
+
+    /* ── Number-key channel entry display ── */
+    #ch-input-display {
+      position: absolute;
+      bottom: 50%;
+      left: 50%;
+      transform: translate(-50%, 50%);
+      font-size: 64px;
+      font-weight: bold;
+      color: var(--green);
+      text-shadow: 0 0 20px rgba(57,255,20,0.9), 0 0 50px rgba(57,255,20,0.4);
+      z-index: 35;
+      pointer-events: none;
+      display: none;
+      letter-spacing: 4px;
+    }
+    #ch-input-display.visible { display: block; }
+
+    /* ═══ TV GUIDE OVERLAY ══════════════════════════════════════════════════ */
+    .guide-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .guide-overlay.open { opacity: 1; pointer-events: all; }
+
+    .guide-panel {
+      background: #0a0a0a;
+      border: 1px solid #222;
+      border-radius: 8px;
+      width: min(960px, 100%);
+      max-height: 85vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 0 80px rgba(0,0,0,0.95);
+    }
+    .guide-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 18px;
+      border-bottom: 1px solid #1a1a0a;
+      background: #0d0d05;
+    }
+    .guide-title { font-size: 10px; letter-spacing: 4px; color: var(--green); text-transform: uppercase; text-shadow: 0 0 8px rgba(57,255,20,0.5); }
+    .guide-close { background: none; border: none; color: rgba(245,240,232,0.35); font-size: 18px; cursor: pointer; line-height: 1; padding: 0 4px; }
+    .guide-close:hover { color: var(--cream); }
+    .guide-body  { overflow-y: auto; flex: 1; }
+
+    .guide-channel-row {
+      display: flex;
+      border-bottom: 1px solid #151505;
+      cursor: pointer;
+      transition: background 0.1s;
+    }
+    .guide-channel-row:hover { background: rgba(57,255,20,0.04); }
+    .guide-channel-row.active-ch { background: rgba(57,255,20,0.06); }
+
+    .guide-ch-label {
+      width: 120px; flex-shrink: 0;
+      padding: 12px 16px;
+      border-right: 1px solid #151505;
+      display: flex; flex-direction: column; justify-content: center; gap: 2px;
+    }
+    .guide-ch-num  { font-size: 18px; font-weight: bold; }
+    .guide-ch-name { font-size: 9px; color: rgba(245,240,232,0.4); letter-spacing: 1px; text-transform: uppercase; line-height: 1.3; }
+    .guide-ch-era  { font-size: 8px; color: rgba(245,240,232,0.2); letter-spacing: 1px; margin-top: 2px; }
+
+    .guide-programs { flex: 1; display: flex; align-items: stretch; overflow: hidden; padding: 8px 12px; gap: 6px; }
+    .guide-program {
+      min-width: 150px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid #1e1e0e;
+      border-radius: 4px;
+      padding: 8px 10px;
+      display: flex; flex-direction: column; gap: 3px;
+    }
+    .guide-program.now-airing { border-color: rgba(57,255,20,0.3); background: rgba(57,255,20,0.05); }
+    .guide-program-time  { font-size: 8px; color: rgba(245,240,232,0.3); letter-spacing: 1px; }
+    .guide-program.now-airing .guide-program-time { color: var(--green); }
+    .guide-program-title { font-size: 10px; color: rgba(245,240,232,0.8); line-height: 1.3; }
+    .guide-program-show  { font-size: 9px; color: rgba(245,240,232,0.3); }
+
+    .keyboard-hint { font-size: 9px; color: rgba(245,240,232,0.12); letter-spacing: 2px; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <div class="tv-set">
+    <div class="tv-body">
+
+      <div class="screen-section">
+        <div class="screen-housing">
+          <!-- This div is what goes fullscreen -->
+          <div id="tv-screen">
+
+            <div id="power-on" onclick="powerOn()">
+              <div class="power-symbol">⏻</div>
+              <div class="power-label">Click to turn on</div>
+            </div>
+
+            <canvas id="static-canvas"></canvas>
+            <div id="player-container"></div>
+
+            <div id="signal-lost">
+              <div class="sl-icon">📡</div>
+              <div class="sl-text">SIGNAL LOST</div>
+              <div class="sl-sub" id="signal-lost-sub">Skipping...</div>
+            </div>
+
+            <!-- Channel number input (type digits on keyboard) -->
+            <div id="ch-input-display"></div>
+
+            <!-- OSD: Channel badge (brief, on channel change) -->
+            <div id="osd-channel">
+              <div class="osd-ch-num" id="osd-ch-num">--</div>
+              <div class="osd-ch-name" id="osd-ch-name"></div>
+            </div>
+
+            <!-- OSD: Now Playing (fades in/out, always visible in fullscreen) -->
+            <div id="osd-nowplaying">
+              <div class="osd-np-inner">
+                <span class="osd-np-ch"   id="osd-np-ch">--</span>
+                <span class="osd-np-show" id="osd-np-show"></span>
+                <span class="osd-np-sep">·</span>
+                <span class="osd-np-title" id="osd-np-title">Stand by...</span>
+                <span class="osd-np-year"  id="osd-np-year"></span>
+                <span class="osd-np-rem"   id="osd-np-rem"></span>
+              </div>
+            </div>
+
+            <div class="screen-glow"></div>
+          </div>
+
+          <!-- Now playing bar (below screen, normal mode only) -->
+          <div class="now-playing-bar">
+            <span class="np-ch-badge" id="np-ch">--</span>
+            <span class="np-divider">|</span>
+            <span class="np-show"  id="np-show">—</span>
+            <span class="np-divider">·</span>
+            <span class="np-title" id="np-title">Stand by...</span>
+            <span class="np-year"  id="np-year"></span>
+            <span class="np-rem"   id="np-rem"></span>
+            <button class="skip-btn" onclick="skipEpisode()" title="Skip">⏭</button>
+          </div>
+        </div>
+
+        <div class="tv-bottom-strip">
+          <div class="brand-text">Nostalgic TV</div>
+          <div class="bottom-btns">
+            <button class="phys-btn-small" onclick="toggleGuide()">TV Guide</button>
+            <button class="phys-btn-small" onclick="toggleFullscreen()">⛶ Full</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right control panel -->
+      <div class="control-panel">
+        <div class="channel-display">
+          <div class="ch-led-label">CH</div>
+          <div class="ch-led-number" id="ch-display">--</div>
+        </div>
+
+        <div class="ctrl-group">
+          <div class="ctrl-label">Power</div>
+          <button class="phys-btn" onclick="powerOn()">⏻</button>
+        </div>
+
+        <div class="ctrl-group">
+          <div class="ctrl-label">Channel</div>
+          <div class="ch-pair">
+            <button class="phys-btn" onclick="changeChannel(1)">▲</button>
+            <button class="phys-btn" onclick="changeChannel(-1)">▼</button>
+          </div>
+        </div>
+
+        <div class="knob-section">
+          <div class="knob-label">Tune</div>
+          <div class="knob" id="knob" onclick="changeChannel(1)"></div>
+        </div>
+
+        <div class="power-led" id="power-led"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="keyboard-hint">← → channel &nbsp;·&nbsp; 0–9 direct &nbsp;·&nbsp; G guide &nbsp;·&nbsp; F fullscreen &nbsp;·&nbsp; S skip</div>
+
+  <!-- TV Guide Overlay -->
+  <div class="guide-overlay" id="guide-overlay" onclick="handleGuideClick(event)">
+    <div class="guide-panel">
+      <div class="guide-header">
+        <div class="guide-title">📺 TV Guide</div>
+        <button class="guide-close" onclick="toggleGuide()">✕</button>
+      </div>
+      <div class="guide-body" id="guide-body"></div>
+    </div>
+  </div>
+
+  <script>
+  // ─────────────────────────────────────────────────────────────────────────
+  // CHANNEL DATABASE
+  // All content sourced from archive.org using direct MP4 download links.
+  // durationMins drives the broadcast schedule — set it accurately.
+  // ─────────────────────────────────────────────────────────────────────────
+  const CHANNELS = [
+
+    // ── CH 3: He-Man ──────────────────────────────────────────────────────
+    {
+      number: 3, name: "He-Man", era: "1983–1985", color: "#e74c3c",
+      description: "By the power of Grayskull! — Masters of the Universe Season 1",
+      playlist: [
+        { title: "Diamond Ray of Disappearance", show: "He-Man", year: 1983, durationMins: 22,
+          directUrl: "https://archive.org/download/he-man-and-the-masters-of-the-universe_202312/He-Man%20S01E01%20Diamond%20Ray%20of%20Disappearance.mp4" },
+        { title: "Teela's Quest", show: "He-Man", year: 1983, durationMins: 22,
+          directUrl: "https://archive.org/download/he-man-and-the-masters-of-the-universe_202312/He-Man%20S01E02%20Teela%27s%20Quest.mp4" },
+        { title: "Colossor Awakes", show: "He-Man", year: 1983, durationMins: 22,
+          directUrl: "https://archive.org/download/he-man-and-the-masters-of-the-universe_202312/He-Man%20S01E03%20Colossor%20Awakes.mp4" },
+        { title: "The Dragon Invasion", show: "He-Man", year: 1983, durationMins: 22,
+          directUrl: "https://archive.org/download/he-man-and-the-masters-of-the-universe_202312/He-Man%20S01E04%20The%20Dragon%20Invasion.mp4" },
+        { title: "The Curse of the Spellstone", show: "He-Man", year: 1983, durationMins: 22,
+          directUrl: "https://archive.org/download/he-man-and-the-masters-of-the-universe_202312/He-Man%20S01E05%20The%20Curse%20of%20the%20Spellstone.mp4" },
+        { title: "The Time Corridor", show: "He-Man", year: 1983, durationMins: 22,
+          directUrl: "https://archive.org/download/he-man-and-the-masters-of-the-universe_202312/He-Man%20S01E06%20The%20Time%20Corridor.mp4" },
+        { title: "Creatures from the Tar Swamp", show: "He-Man", year: 1983, durationMins: 22,
+          directUrl: "https://archive.org/download/he-man-and-the-masters-of-the-universe_202312/He-Man%20S01E07%20Creatures%20from%20the%20Tar%20Swamp.mp4" },
+        { title: "Prince Adam No More", show: "He-Man", year: 1983, durationMins: 22,
+          directUrl: "https://archive.org/download/he-man-and-the-masters-of-the-universe_202312/He-Man%20S01E15%20Prince%20Adam%20No%20More.mp4" },
+      ]
+    },
+
+    // ── CH 7: Transformers G1 ─────────────────────────────────────────────
+    {
+      number: 7, name: "Transformers", era: "1984–1985", color: "#e74c3c",
+      description: "Autobots vs. Decepticons — Generation 1, Season 1",
+      playlist: [
+        { title: "More Than Meets the Eye (1)", show: "Transformers G1", year: 1984, durationMins: 23,
+          directUrl: "https://archive.org/download/transformers-season-1/S01E01%20More%20Than%20Meets%20The%20Eye%20%28Part%201%29.mp4" },
+        { title: "More Than Meets the Eye (2)", show: "Transformers G1", year: 1984, durationMins: 23,
+          directUrl: "https://archive.org/download/transformers-season-1/S01E02%20More%20Than%20Meets%20The%20Eye%20%28Part%202%29.mp4" },
+        { title: "More Than Meets the Eye (3)", show: "Transformers G1", year: 1984, durationMins: 23,
+          directUrl: "https://archive.org/download/transformers-season-1/S01E03%20More%20Than%20Meets%20The%20Eye%20%28Part%203%29.mp4" },
+        { title: "Transport to Oblivion", show: "Transformers G1", year: 1984, durationMins: 23,
+          directUrl: "https://archive.org/download/transformers-season-1/S01E04%20Transport%20To%20Oblivion.mp4" },
+        { title: "Roll for It", show: "Transformers G1", year: 1984, durationMins: 23,
+          directUrl: "https://archive.org/download/transformers-season-1/S01E05%20Roll%20For%20It.mp4" },
+        { title: "Divide and Conquer", show: "Transformers G1", year: 1984, durationMins: 23,
+          directUrl: "https://archive.org/download/transformers-season-1/S01E06%20Divide%20And%20Conquer.mp4" },
+        { title: "S.O.S. Dinobots", show: "Transformers G1", year: 1984, durationMins: 23,
+          directUrl: "https://archive.org/download/transformers-season-1/S01E07%20S.O.S.%20Dinobots.mp4" },
+        { title: "War of the Dinobots", show: "Transformers G1", year: 1984, durationMins: 23,
+          directUrl: "https://archive.org/download/transformers-season-1/S01E11%20War%20Of%20The%20Dinobots.mp4" },
+      ]
+    },
+
+    // ── CH 11: TMNT ───────────────────────────────────────────────────────
+    {
+      number: 11, name: "Ninja Turtles", era: "1987–1988", color: "#27ae60",
+      description: "Heroes in a half shell — Teenage Mutant Ninja Turtles Seasons 1 & 2",
+      playlist: [
+        { title: "Turtle Tracks", show: "TMNT", year: 1987, durationMins: 22,
+          directUrl: "https://archive.org/download/tmnt-season-1-2/Teenage%20Mutant%20Ninja%20Turtles%20-%2001x01%20-%20Turtle%20Tracks.mp4" },
+        { title: "Enter the Shredder", show: "TMNT", year: 1987, durationMins: 22,
+          directUrl: "https://archive.org/download/tmnt-season-1-2/Teenage%20Mutant%20Ninja%20Turtles%20-%2001x02%20-%20Enter%20the%20Shredder.mp4" },
+        { title: "A Thing About Rats", show: "TMNT", year: 1987, durationMins: 22,
+          directUrl: "https://archive.org/download/tmnt-season-1-2/Teenage%20Mutant%20Ninja%20Turtles%20-%2001x03%20-%20A%20Thing%20About%20Rats.mp4" },
+        { title: "Hot-Rodding Teenagers from Dimension X", show: "TMNT", year: 1987, durationMins: 22,
+          directUrl: "https://archive.org/download/tmnt-season-1-2/Teenage%20Mutant%20Ninja%20Turtles%20-%2001x04%20-%20Hot-Rodding%20Teenagers%20from%20Dimension%20X.mp4" },
+        { title: "Shredder & Splintered", show: "TMNT", year: 1987, durationMins: 22,
+          directUrl: "https://archive.org/download/tmnt-season-1-2/Teenage%20Mutant%20Ninja%20Turtles%20-%2001x05%20-%20Shredder%20%26%20Splintered.mp4" },
+        { title: "Return of the Shredder", show: "TMNT", year: 1988, durationMins: 22,
+          directUrl: "https://archive.org/download/tmnt-season-1-2/Teenage%20Mutant%20Ninja%20Turtles%20-%2002x01%20-%20Return%20of%20the%20Shredder.mp4" },
+        { title: "The Case of the Killer Pizzas", show: "TMNT", year: 1988, durationMins: 22,
+          directUrl: "https://archive.org/download/tmnt-season-1-2/Teenage%20Mutant%20Ninja%20Turtles%20-%2002x06%20-%20The%20Case%20of%20the%20Killer%20Pizzas.mp4" },
+        { title: "Enter the Fly", show: "TMNT", year: 1988, durationMins: 22,
+          directUrl: "https://archive.org/download/tmnt-season-1-2/Teenage%20Mutant%20Ninja%20Turtles%20-%2002x07%20-%20Enter%20The%20Fly.mp4" },
+      ]
+    },
+
+    // ── CH 17: Darkwing Duck ──────────────────────────────────────────────
+    {
+      number: 17, name: "Darkwing Duck", era: "1991–1992", color: "#8e44ad",
+      description: "Let's get dangerous — Disney Afternoon's caped crusader",
+      playlist: [
+        { title: "Darkly Dawns the Duck (1)", show: "Darkwing Duck", year: 1991, durationMins: 22,
+          directUrl: "https://archive.org/download/darkwing-duck_20240119/Darkwing.Duck.S01E01.NORDiC.DSNP.WEB-DL.AAC2.0.H.264-ROCKETRACCOON.mp4" },
+        { title: "Darkly Dawns the Duck (2)", show: "Darkwing Duck", year: 1991, durationMins: 22,
+          directUrl: "https://archive.org/download/darkwing-duck_20240119/Darkwing.Duck.S01E02.NORDiC.DSNP.WEB-DL.AAC2.0.H.264-ROCKETRACCOON.mp4" },
+        { title: "Duck Blind", show: "Darkwing Duck", year: 1991, durationMins: 22,
+          directUrl: "https://archive.org/download/darkwing-duck_20240119/Darkwing.Duck.S01E03.NORDiC.DSNP.WEB-DL.AAC2.0.H.264-ROCKETRACCOON.mp4" },
+        { title: "Beauty and the Beet", show: "Darkwing Duck", year: 1991, durationMins: 22,
+          directUrl: "https://archive.org/download/darkwing-duck_20240119/Darkwing.Duck.S01E04.NORDiC.DSNP.WEB-DL.AAC2.0.H.264-ROCKETRACCOON.mp4" },
+        { title: "Getting Antsy", show: "Darkwing Duck", year: 1991, durationMins: 22,
+          directUrl: "https://archive.org/download/darkwing-duck_20240119/Darkwing.Duck.S01E05.NORDiC.DSNP.WEB-DL.AAC2.0.H.264-ROCKETRACCOON.mp4" },
+        { title: "Night of the Living Spud", show: "Darkwing Duck", year: 1991, durationMins: 22,
+          directUrl: "https://archive.org/download/darkwing-duck_20240119/Darkwing.Duck.S01E06.NORDiC.DSNP.WEB-DL.AAC2.0.H.264-ROCKETRACCOON.mp4" },
+        { title: "Apes of Wrath", show: "Darkwing Duck", year: 1991, durationMins: 22,
+          directUrl: "https://archive.org/download/darkwing-duck_20240119/Darkwing.Duck.S01E07.NORDiC.DSNP.WEB-DL.AAC2.0.H.264-ROCKETRACCOON.mp4" },
+        { title: "Dirty Money", show: "Darkwing Duck", year: 1991, durationMins: 22,
+          directUrl: "https://archive.org/download/darkwing-duck_20240119/Darkwing.Duck.S01E08.NORDiC.DSNP.WEB-DL.AAC2.0.H.264-ROCKETRACCOON.mp4" },
+      ]
+    },
+
+    // ── CH 21: Power Rangers ──────────────────────────────────────────────
+    {
+      number: 21, name: "Power Rangers", era: "1993", color: "#c0392b",
+      description: "Mighty Morphin Power Rangers — Fox Kids, Season 1",
+      playlist: [
+        { title: "Day of the Dumpster", show: "Mighty Morphin Power Rangers", year: 1993, durationMins: 21,
+          directUrl: "https://archive.org/download/mighty-morphin-power-rangers-season-1/Power%20Rangers%20-%20S01E01%20-%20Day%20of%20the%20Dumpster%20%28480p%20x265%20EDGE2020%29.mp4" },
+        { title: "Food Fight", show: "Mighty Morphin Power Rangers", year: 1993, durationMins: 21,
+          directUrl: "https://archive.org/download/mighty-morphin-power-rangers-season-1/Power%20Rangers%20-%20S01E02%20-%20Food%20Fight%20%28480p%20x265%20EDGE2020%29.mp4" },
+        { title: "High Five", show: "Mighty Morphin Power Rangers", year: 1993, durationMins: 21,
+          directUrl: "https://archive.org/download/mighty-morphin-power-rangers-season-1/Power%20Rangers%20-%20S01E03%20-%20High%20Five%20%28480p%20x265%20EDGE2020%29.mp4" },
+        { title: "Teamwork", show: "Mighty Morphin Power Rangers", year: 1993, durationMins: 21,
+          directUrl: "https://archive.org/download/mighty-morphin-power-rangers-season-1/Power%20Rangers%20-%20S01E04%20-%20Teamwork%20%28480p%20x265%20EDGE2020%29.mp4" },
+        { title: "A Pressing Engagement", show: "Mighty Morphin Power Rangers", year: 1993, durationMins: 21,
+          directUrl: "https://archive.org/download/mighty-morphin-power-rangers-season-1/Power%20Rangers%20-%20S01E05%20-%20A%20Pressing%20Engagement%20%28480p%20x265%20EDGE2020%29.mp4" },
+        { title: "Green With Evil (1)", show: "Mighty Morphin Power Rangers", year: 1993, durationMins: 21,
+          directUrl: "https://archive.org/download/mighty-morphin-power-rangers-season-1/Power%20Rangers%20-%20S01E17%20-%20Green%20With%20Evil%20%281%29%20Out%20of%20Control%20%28480p%20x265%20EDGE2020%29.mp4" },
+        { title: "Green With Evil (2)", show: "Mighty Morphin Power Rangers", year: 1993, durationMins: 21,
+          directUrl: "https://archive.org/download/mighty-morphin-power-rangers-season-1/Power%20Rangers%20-%20S01E18%20-%20Green%20With%20Evil%20%282%29%20Jason%27s%20Battle%20%28480p%20x265%20EDGE2020%29.mp4" },
+        { title: "Green With Evil (3)", show: "Mighty Morphin Power Rangers", year: 1993, durationMins: 21,
+          directUrl: "https://archive.org/download/mighty-morphin-power-rangers-season-1/Power%20Rangers%20-%20S01E19%20-%20Green%20With%20Evil%20%283%29%20The%20Rescue%20%28480p%20x265%20EDGE2020%29.mp4" },
+      ]
+    },
+
+    // ── CH 25: Arthur ─────────────────────────────────────────────────────
+    {
+      number: 25, name: "Arthur", era: "1996–2000", color: "#e67e22",
+      description: "Everyone's favourite aardvark — PBS Kids, Season 1",
+      playlist: [
+        { title: "Arthur's Eyes / Francine's Bad Hair Day", show: "Arthur", year: 1996, durationMins: 26,
+          directUrl: "https://archive.org/download/arthur-1996-complete_202203/Season%201/Arthur%20-%20S01E01-E02%20-%20Arthur%27s%20Eyes%20%2B%20Francine%27s%20Bad%20Hair%20Day%20SDTV.mp4" },
+        { title: "Arthur and the Real Mr. Ratburn / Arthur's Spelling Trouble", show: "Arthur", year: 1996, durationMins: 26,
+          directUrl: "https://archive.org/download/arthur-1996-complete_202203/Season%201/Arthur%20-%20S01E03-E04%20-%20Arthur%20and%20the%20Real%20Mr.%20Ratburn%20%2B%20Arthur%27s%20Spelling%20Trubble%20SDTV.mp4" },
+        { title: "D.W. All Wet / Buster's Dino Dilemma", show: "Arthur", year: 1996, durationMins: 26,
+          directUrl: "https://archive.org/download/arthur-1996-complete_202203/Season%201/Arthur%20-%20S01E05-E06%20-%20D.W.%20All%20Wet%20%2B%20Buster%27s%20Dino%20Dilemma%20SDTV.mp4" },
+        { title: "D.W.'s Imaginary Friend / Arthur's Lost Library Book", show: "Arthur", year: 1996, durationMins: 26,
+          directUrl: "https://archive.org/download/arthur-1996-complete_202203/Season%201/Arthur%20-%20S01E07-E08%20-%20D.W.%27s%20Imaginary%20Friend%20%2B%20Arthur%27s%20Lost%20Library%20Book%20SDTV.mp4" },
+        { title: "Arthur's Pet Business / D.W. the Copycat", show: "Arthur", year: 1996, durationMins: 26,
+          directUrl: "https://archive.org/download/arthur-1996-complete_202203/Season%201/Arthur%20-%20S01E09-E10%20-%20Arthur%27s%20Pet%20Business%20%2B%20D.W.%20the%20Copycat%20SDTV.mp4" },
+        { title: "Arthur Goes to Camp / Buster Makes the Grade", show: "Arthur", year: 1996, durationMins: 26,
+          directUrl: "https://archive.org/download/arthur-1996-complete_202203/Season%201/Arthur%20-%20S01E13-E14%20-%20Arthur%20Goes%20to%20Camp%20%2B%20Buster%20Makes%20the%20Grade%20SDTV.mp4" },
+      ]
+    },
+
+    // ── CH 28: Bill Nye ───────────────────────────────────────────────────
+    {
+      number: 28, name: "Bill Nye", era: "1993–1998", color: "#2980b9",
+      description: "Science rules! — Bill Nye the Science Guy",
+      playlist: [
+        { title: "Flight", show: "Bill Nye the Science Guy", year: 1993, durationMins: 26,
+          directUrl: "https://archive.org/download/billnyethescienceguythecompleteseries-07-28-2021/01%20Flight.mp4" },
+        { title: "Dinosaurs", show: "Bill Nye the Science Guy", year: 1993, durationMins: 26,
+          directUrl: "https://archive.org/download/billnyethescienceguythecompleteseries-07-28-2021/03%20Dinosaurs.mp4" },
+        { title: "Gravity", show: "Bill Nye the Science Guy", year: 1993, durationMins: 26,
+          directUrl: "https://archive.org/download/billnyethescienceguythecompleteseries-07-28-2021/06%20Gravity.mp4" },
+        { title: "Outer Space", show: "Bill Nye the Science Guy", year: 1994, durationMins: 26,
+          directUrl: "https://archive.org/download/billnyethescienceguythecompleteseries-07-28-2021/19%20Outer%20Space.mp4" },
+        { title: "Electricity", show: "Bill Nye the Science Guy", year: 1994, durationMins: 26,
+          directUrl: "https://archive.org/download/billnyethescienceguythecompleteseries-07-28-2021/18%20Electricity.mp4" },
+        { title: "Volcanoes", show: "Bill Nye the Science Guy", year: 1997, durationMins: 26,
+          directUrl: "https://archive.org/download/billnyethescienceguythecompleteseries-07-28-2021/74%20Volcanoes.mp4" },
+        { title: "Bugs", show: "Bill Nye the Science Guy", year: 1994, durationMins: 26,
+          directUrl: "https://archive.org/download/billnyethescienceguythecompleteseries-07-28-2021/31%20Insects.mp4" },
+        { title: "Planets & Moons", show: "Bill Nye the Science Guy", year: 1995, durationMins: 26,
+          directUrl: "https://archive.org/download/billnyethescienceguythecompleteseries-07-28-2021/41%20Planets.mp4" },
+      ]
+    },
+
+    // ── CH 32: Reading Rainbow ────────────────────────────────────────────
+    {
+      number: 32, name: "Reading Rainbow", era: "1983–2006", color: "#16a085",
+      description: "Take a look, it's in a book — LeVar Burton's beloved PBS classic",
+      playlist: [
+        { title: "Tight Times", show: "Reading Rainbow", year: 1983, durationMins: 29,
+          directUrl: "https://archive.org/download/ReadingRainbowTVSeries/Reading.Rainbow.S01E01.Tight.Times.480p.AMZN.WEB-DL.DD.2.0.x264-RTN.mp4" },
+        { title: "Miss Nelson is Back", show: "Reading Rainbow", year: 1983, durationMins: 29,
+          directUrl: "https://archive.org/download/ReadingRainbowTVSeries/Reading.Rainbow.S01E02.Miss.Nelson.is.Back.480p.AMZN.WEB-DL.DD.2.0.x264-RTN.mp4" },
+        { title: "Bea and Mr. Jones", show: "Reading Rainbow", year: 1983, durationMins: 29,
+          directUrl: "https://archive.org/download/ReadingRainbowTVSeries/Reading.Rainbow.S01E03.Bea.and.Mr.Jones.480p.AMZN.WEB-DL.DD.2.0.x264-RTN.mp4" },
+        { title: "Bringing the Rain to Kapiti Plain", show: "Reading Rainbow", year: 1983, durationMins: 29,
+          directUrl: "https://archive.org/download/ReadingRainbowTVSeries/Reading.Rainbow.S01E04.Bringing.the.Rain.to.Kapiti.Plain.480p.AMZN.WEB-DL.DD.2.0.x264-RTN.mp4" },
+        { title: "Digging Up Dinosaurs", show: "Reading Rainbow", year: 1983, durationMins: 29,
+          directUrl: "https://archive.org/download/ReadingRainbowTVSeries/Reading.Rainbow.S01E06.Digging.Up.Dinosaurs.480p.AMZN.WEB-DL.DD.2.0.x264-RTN.mp4" },
+        { title: "Gregory the Terrible Eater", show: "Reading Rainbow", year: 1983, durationMins: 29,
+          directUrl: "https://archive.org/download/ReadingRainbowTVSeries/Reading.Rainbow.S01E11.Gregory.the.Terrible.Eater.480p.AMZN.WEB-DL.DD.2.0.x264-RTN.mp4" },
+      ]
+    },
+
+    // ── CH 39: SuperTed ───────────────────────────────────────────────────
+    {
+      number: 39, name: "SuperTed", era: "1982–1986", color: "#e91e8c",
+      description: "The little bear with superpowers — BBC Wales classic, Series 1",
+      playlist: [
+        { title: "Episode 1", show: "SuperTed", year: 1982, durationMins: 10,
+          directUrl: "https://archive.org/download/SuperTedSeries11982H.264/Superted.S01E01.DVDRip.x264-%5Bdp%5D.mp4" },
+        { title: "Episode 2", show: "SuperTed", year: 1982, durationMins: 10,
+          directUrl: "https://archive.org/download/SuperTedSeries11982H.264/Superted.S01E02.DVDRip.x264-%5Bdp%5D.mp4" },
+        { title: "Episode 3", show: "SuperTed", year: 1982, durationMins: 10,
+          directUrl: "https://archive.org/download/SuperTedSeries11982H.264/Superted.S01E03.DVDRip.x264-%5Bdp%5D.mp4" },
+        { title: "Episode 4", show: "SuperTed", year: 1982, durationMins: 10,
+          directUrl: "https://archive.org/download/SuperTedSeries11982H.264/Superted.S01E04.DVDRip.x264-%5Bdp%5D.mp4" },
+        { title: "Episode 5", show: "SuperTed", year: 1982, durationMins: 10,
+          directUrl: "https://archive.org/download/SuperTedSeries11982H.264/Superted.S01E05.DVDRip.x264-%5Bdp%5D.mp4" },
+        { title: "Episode 6", show: "SuperTed", year: 1982, durationMins: 10,
+          directUrl: "https://archive.org/download/SuperTedSeries11982H.264/Superted.S01E06.DVDRip.x264-%5Bdp%5D.mp4" },
+        { title: "Episode 7", show: "SuperTed", year: 1982, durationMins: 10,
+          directUrl: "https://archive.org/download/SuperTedSeries11982H.264/Superted.S01E07.DVDRip.x264-%5Bdp%5D.mp4" },
+        { title: "Episode 8", show: "SuperTed", year: 1982, durationMins: 10,
+          directUrl: "https://archive.org/download/SuperTedSeries11982H.264/Superted.S01E08.DVDRip.x264-%5Bdp%5D.mp4" },
+        { title: "Episode 9", show: "SuperTed", year: 1982, durationMins: 10,
+          directUrl: "https://archive.org/download/SuperTedSeries11982H.264/Superted.S01E09.DVDRip.x264-%5Bdp%5D.mp4" },
+        { title: "Episode 10", show: "SuperTed", year: 1982, durationMins: 10,
+          directUrl: "https://archive.org/download/SuperTedSeries11982H.264/Superted.S01E10.DVDRip.x264-%5Bdp%5D.mp4" },
+        { title: "Episode 11", show: "SuperTed", year: 1982, durationMins: 10,
+          directUrl: "https://archive.org/download/SuperTedSeries11982H.264/Superted.S01E11.DVDRip.x264-%5Bdp%5D.mp4" },
+        { title: "Episode 12", show: "SuperTed", year: 1982, durationMins: 10,
+          directUrl: "https://archive.org/download/SuperTedSeries11982H.264/Superted.S01E12.DVDRip.x264-%5Bdp%5D.mp4" },
+      ]
+    },
+
+    // ── CH 43: Winnie the Pooh ────────────────────────────────────────────
+    {
+      number: 43, name: "Winnie the Pooh", era: "1988–1991", color: "#f39c12",
+      description: "The New Adventures of Winnie the Pooh — Disney, Season 1",
+      playlist: [
+        { title: "Honey for a Bunny / Trap as Trap Can", show: "New Adventures of Winnie the Pooh", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/tna-of-winnie-the-pooh-s-04-m-02-boo-to-you-winnie-the-pooh-1996-360p-re-dvdrip/TNA%20of%20Winnie%20the%20Pooh%20S01E13%20Honey%20for%20a%20Bunny%20%2B%20Trap%20as%20Trap%20Can.mp4" },
+        { title: "The Masked Offender / Things That Go Piglet in the Night", show: "New Adventures of Winnie the Pooh", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/tna-of-winnie-the-pooh-s-04-m-02-boo-to-you-winnie-the-pooh-1996-360p-re-dvdrip/TNA%20of%20Winnie%20the%20Pooh%20S01E14%20The%20Masked%20Offender%20%2B%20Things%20That%20Go%20Piglet%20in%20the%20Night.mp4" },
+        { title: "Luck Amok / The Magic Earmuffs", show: "New Adventures of Winnie the Pooh", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/tna-of-winnie-the-pooh-s-04-m-02-boo-to-you-winnie-the-pooh-1996-360p-re-dvdrip/TNA%20of%20Winnie%20the%20Pooh%20S01E15%20Luck%20Amok%20%2B%20The%20Magic%20Earmuffs.mp4" },
+        { title: "The Wishing Bear", show: "New Adventures of Winnie the Pooh", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/tna-of-winnie-the-pooh-s-04-m-02-boo-to-you-winnie-the-pooh-1996-360p-re-dvdrip/TNA%20of%20Winnie%20the%20Pooh%20S01E16%20The%20Wishing%20Bear.mp4" },
+        { title: "King of the Beasties / The Rats Who Came to Dinner", show: "New Adventures of Winnie the Pooh", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/tna-of-winnie-the-pooh-s-04-m-02-boo-to-you-winnie-the-pooh-1996-360p-re-dvdrip/TNA%20of%20Winnie%20the%20Pooh%20S01E17%20King%20of%20the%20Beasties%20%2B%20The%20Rats%20Who%20Came%20to%20Dinner.mp4" },
+        { title: "My Hero / Owl Feathers", show: "New Adventures of Winnie the Pooh", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/tna-of-winnie-the-pooh-s-04-m-02-boo-to-you-winnie-the-pooh-1996-360p-re-dvdrip/TNA%20of%20Winnie%20the%20Pooh%20S01E18%20My%20Hero%20%2B%20Owl%20Feathers.mp4" },
+        { title: "A Very, Very Large Animal / Fish Out of Water", show: "New Adventures of Winnie the Pooh", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/tna-of-winnie-the-pooh-s-04-m-02-boo-to-you-winnie-the-pooh-1996-360p-re-dvdrip/TNA%20of%20Winnie%20the%20Pooh%20S01E19%20A%20Very%2C%20Very%20Large%20Animal%20%2B%20Fish%20Out%20of%20Water.mp4" },
+        { title: "Lights Out / Tigger's Shoes", show: "New Adventures of Winnie the Pooh", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/tna-of-winnie-the-pooh-s-04-m-02-boo-to-you-winnie-the-pooh-1996-360p-re-dvdrip/TNA%20of%20Winnie%20the%20Pooh%20S01E20%20Lights%20Out%20%2B%20Tigger%27s%20Shoes.mp4" },
+        { title: "The New Eeyore / Tigger, Private Ear", show: "New Adventures of Winnie the Pooh", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/tna-of-winnie-the-pooh-s-04-m-02-boo-to-you-winnie-the-pooh-1996-360p-re-dvdrip/TNA%20of%20Winnie%20the%20Pooh%20S01E21%20The%20New%20Eeyore%20%2B%20Tigger%2C%20Private%20Ear.mp4" },
+        { title: "Party Poohper / The Old Switcheroo", show: "New Adventures of Winnie the Pooh", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/tna-of-winnie-the-pooh-s-04-m-02-boo-to-you-winnie-the-pooh-1996-360p-re-dvdrip/TNA%20of%20Winnie%20the%20Pooh%20S01E22%20Party%20Poohper%20%2B%20The%20Old%20Switcheroo.mp4" },
+      ]
+    },
+
+    // ── CH 47: Captain Planet ──────────────────────────────────────────────
+    {
+      number: 47, name: "Captain Planet", era: "1990–1993", color: "#1abc9c",
+      description: "The power is yours! — Captain Planet and the Planeteers, Season 1",
+      playlist: [
+        { title: "A Hero for Earth", show: "Captain Planet and the Planeteers", year: 1990, durationMins: 23,
+          directUrl: "https://archive.org/download/CaptainPlanetAndThePlaneteersS01E01AHeroForEarth/Captain%20Planet%20and%20the%20Planeteers%20-%20S01E01%20-%20A%20Hero%20for%20Earth.mp4" },
+        { title: "The Conqueror", show: "Captain Planet and the Planeteers", year: 1990, durationMins: 23,
+          directUrl: "https://archive.org/download/captain-planet-and-the-planeteers-1990/CAPTAIN%20PLANET%20and%20The%20Planeteers%20%281990%29/CAPTAIN%20PLANET%20and%20The%20Planeteers%20%281990%29%20S1/Captain%20Planet%20And%20The%20Planeteers%20-%2001X06%20-%20The%20Conqueror.mp4" },
+        { title: "The Dead Seas", show: "Captain Planet and the Planeteers", year: 1990, durationMins: 23,
+          directUrl: "https://archive.org/download/captain-planet-and-the-planeteers-1990/CAPTAIN%20PLANET%20and%20The%20Planeteers%20%281990%29/CAPTAIN%20PLANET%20and%20The%20Planeteers%20%281990%29%20S1/Captain%20Planet%20And%20The%20Planeteers%20-%2001X08%20-%20The%20Dead%20Seas.mp4" },
+        { title: "Tree of Life", show: "Captain Planet and the Planeteers", year: 1990, durationMins: 23,
+          directUrl: "https://archive.org/download/captain-planet-and-the-planeteers-1990/CAPTAIN%20PLANET%20and%20The%20Planeteers%20%281990%29/CAPTAIN%20PLANET%20and%20The%20Planeteers%20%281990%29%20S1/Captain%20Planet%20And%20The%20Planeteers%20-%2001X09%20-%20Tree%20Of%20Life.mp4" },
+        { title: "Volcano's Wrath", show: "Captain Planet and the Planeteers", year: 1990, durationMins: 23,
+          directUrl: "https://archive.org/download/captain-planet-and-the-planeteers-1990/CAPTAIN%20PLANET%20and%20The%20Planeteers%20%281990%29/CAPTAIN%20PLANET%20and%20The%20Planeteers%20%281990%29%20S1/Captain%20Planet%20And%20The%20Planeteers%20-%2001X10%20-%20Volcano%60s%20Wrath.mp4" },
+      ]
+    },
+
+    // ── CH 51: Babar ──────────────────────────────────────────────────────
+    {
+      number: 51, name: "Babar", era: "1989–1991", color: "#9b59b6",
+      description: "The beloved elephant king — classic animated series",
+      playlist: [
+        { title: "Best Friends Forever (1)", show: "Babar", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/babar-the-classic-series-bff/BabarThe%20Classic%20Series_BFF.mp4" },
+        { title: "Best Friends Forever (2)", show: "Babar", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/babar-the-classic-series-bff/BabarThe%20Classic%20Series_BFF2.mp4" },
+        { title: "Best Friends Forever (3)", show: "Babar", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/babar-the-classic-series-bff/BabarThe%20Classic%20Series_BFF3.mp4" },
+        { title: "Best Friends Forever (4)", show: "Babar", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/babar-the-classic-series-bff/BabarThe%20Classic%20Series_BFF4.mp4" },
+        { title: "Best Friends Forever (5)", show: "Babar", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/babar-the-classic-series-bff/BabarThe%20Classic%20Series_BFF5.mp4" },
+        { title: "Best Friends Forever (6)", show: "Babar", year: 1989, durationMins: 22,
+          directUrl: "https://archive.org/download/babar-the-classic-series-bff/BabarThe%20Classic%20Series_BFF6.mp4" },
+      ]
+    },
+
+    // ── CH 53: The World of Peter Rabbit ─────────────────────────────────
+    {
+      number: 53, name: "Peter Rabbit", era: "1992–1998", color: "#5dade2",
+      description: "The World of Peter Rabbit and Friends — BBC Beatrix Potter adaptations",
+      playlist: [
+        { title: "The Tale of Peter Rabbit and Benjamin Bunny", show: "World of Peter Rabbit", year: 1992, durationMins: 24,
+          directUrl: "https://archive.org/download/TheWorldOfPeterRabbitFriendsEp.7TheTaleOfTomKittenJemimaPuddleDuck/The%20World%20of%20Peter%20Rabbit%20and%20Friends/The%20World%20Of%20Peter%20Rabbit%20%26%20Friends%20ep.%201%20-%20The%20Tale%20of%20Peter%20Rabbit%20%26%20Benjamin%20Bunny.mp4" },
+        { title: "The Tale of Mr. Tod", show: "World of Peter Rabbit", year: 1998, durationMins: 24,
+          directUrl: "https://archive.org/download/TheWorldOfPeterRabbitFriendsEp.7TheTaleOfTomKittenJemimaPuddleDuck/The%20World%20of%20Peter%20Rabbit%20and%20Friends/The%20World%20Of%20Peter%20Rabbit%20%26%20Friends%20ep.%202%20-%20The%20Tale%20of%20Mr.%20Tod.mp4" },
+        { title: "The Tale of Two Bad Mice and Johnny Town-Mouse", show: "World of Peter Rabbit", year: 1996, durationMins: 24,
+          directUrl: "https://archive.org/download/TheWorldOfPeterRabbitFriendsEp.7TheTaleOfTomKittenJemimaPuddleDuck/The%20World%20of%20Peter%20Rabbit%20and%20Friends/The%20World%20Of%20Peter%20Rabbit%20%26%20Friends%20ep.%203%20-%20The%20Tale%20of%20Two%20Bad%20Mice%20%26%20Johnny%20Town-Mouse.mp4" },
+        { title: "The Tale of Mrs. Tiggy-Winkle and Mr. Jeremy Fisher", show: "World of Peter Rabbit", year: 1994, durationMins: 24,
+          directUrl: "https://archive.org/download/TheWorldOfPeterRabbitFriendsEp.7TheTaleOfTomKittenJemimaPuddleDuck/The%20World%20of%20Peter%20Rabbit%20and%20Friends/The%20World%20Of%20Peter%20Rabbit%20%26%20Friends%20ep.%204%20-%20The%20Tale%20of%20Mrs.%20Tiggy-Winkle%20%26%20Mr.%20Jeremy%20Fisher.mp4" },
+        { title: "The Tailor of Gloucester", show: "World of Peter Rabbit", year: 1993, durationMins: 24,
+          directUrl: "https://archive.org/download/TheWorldOfPeterRabbitFriendsEp.7TheTaleOfTomKittenJemimaPuddleDuck/The%20World%20of%20Peter%20Rabbit%20and%20Friends/The%20World%20Of%20Peter%20Rabbit%20%26%20Friends%20ep.%205%20-%20The%20Tailor%20of%20Gloucester.mp4" },
+        { title: "The Tale of Samuel Whiskers", show: "World of Peter Rabbit", year: 1993, durationMins: 24,
+          directUrl: "https://archive.org/download/TheWorldOfPeterRabbitFriendsEp.7TheTaleOfTomKittenJemimaPuddleDuck/The%20World%20of%20Peter%20Rabbit%20and%20Friends/The%20World%20Of%20Peter%20Rabbit%20%26%20Friends%20ep.%206%20-%20The%20Tale%20of%20Samuel%20Whiskers%20or%20the%20Roly-Poly%20Pudding.mp4" },
+        { title: "The Tale of Tom Kitten and Jemima Puddle-Duck", show: "World of Peter Rabbit", year: 1993, durationMins: 24,
+          directUrl: "https://archive.org/download/TheWorldOfPeterRabbitFriendsEp.7TheTaleOfTomKittenJemimaPuddleDuck/The%20World%20of%20Peter%20Rabbit%20and%20Friends/The%20World%20Of%20Peter%20Rabbit%20%26%20Friends%20ep.%207%20-%20The%20Tale%20of%20Tom%20Kitten%20%26%20Jemima%20Puddle-Duck.mp4" },
+        { title: "The Tale of the Flopsy Bunnies and Mrs. Tittlemouse", show: "World of Peter Rabbit", year: 1996, durationMins: 24,
+          directUrl: "https://archive.org/download/TheWorldOfPeterRabbitFriendsEp.7TheTaleOfTomKittenJemimaPuddleDuck/The%20World%20of%20Peter%20Rabbit%20and%20Friends/The%20World%20Of%20Peter%20Rabbit%20%26%20Friends%20ep.%208%20-%20The%20Tale%20of%20the%20Flopsy%20Bunnies%20%26%20Mrs.%20Tittlemouse.mp4" },
+        { title: "The Tale of Pigling Bland", show: "World of Peter Rabbit", year: 1994, durationMins: 24,
+          directUrl: "https://archive.org/download/TheWorldOfPeterRabbitFriendsEp.7TheTaleOfTomKittenJemimaPuddleDuck/The%20World%20of%20Peter%20Rabbit%20and%20Friends/The%20World%20Of%20Peter%20Rabbit%20%26%20Friends%20ep.%209%20-%20The%20Tale%20of%20Pigling%20Bland.mp4" },
+      ]
+    },
+
+    // ── CH 55: Rugrats ────────────────────────────────────────────────────
+    {
+      number: 55, name: "Rugrats", era: "1991–2004", color: "#e67e22",
+      description: "Tommy, Chuckie, Phil & Lil — Nickelodeon's classic Klasky Csupo",
+      playlist: [
+        { title: "Angelica the Divine", show: "Rugrats", year: 1994, durationMins: 45,
+          directUrl: "https://archive.org/download/rugrats-angelica-the-divine-1994-vhs/Rugrats%20Angelica%20The%20Divine%201994%20VHS.mp4" },
+      ]
+    },
+
+    // ── CH 58: Hey Arnold ─────────────────────────────────────────────────
+    {
+      number: 58, name: "Hey Arnold!", era: "1996–2004", color: "#3498db",
+      description: "A 2-hour Nickelodeon marathon from January 2000 — commercials and all",
+      playlist: [
+        { title: "Hey Arnold Marathon (Jan 2000)", show: "Hey Arnold!", year: 2000, durationMins: 123,
+          directUrl: "https://archive.org/download/hey-arnold-marathon-jan-29-2000/Hey%20Arnold%20Marathon%20JAN%2029%202000.mp4" },
+      ]
+    },
+
+    // ── CH 36: Golden Age Cartoons ────────────────────────────────────────
+    {
+      number: 36, name: "Golden Age", era: "1928–1955", color: "#d4a017",
+      description: "Popeye, Betty Boop, Looney Tunes — the animated golden age",
+      playlist: [
+        { title: "Steamboat Willie", show: "Walt Disney", year: 1928, durationMins: 8,
+          directUrl: "https://archive.org/download/disneycartoons-publicdomain/Steamboat_Willie_1928.mp4" },
+        { title: "A Song a Day", show: "Betty Boop", year: 1936, durationMins: 7,
+          directUrl: "https://archive.org/download/BettyBoopCartoons/Betty_Boop_A_Song_a_Day_1936_512kb.mp4" },
+        { title: "A Corny Concerto", show: "Looney Tunes", year: 1943, durationMins: 7,
+          directUrl: "https://archive.org/download/ltmm-publicdomain/A%20Corny%20Concerto%20(1943).mp4" },
+        { title: "Taxi-Turvy", show: "Popeye the Sailor", year: 1954, durationMins: 6,
+          directUrl: "https://archive.org/download/popeye_taxi-turvey/popeye_taxi-turvey_512kb.mp4" },
+        { title: "Is My Palm Read", show: "Betty Boop", year: 1932, durationMins: 7,
+          directUrl: "https://archive.org/download/BettyBoopCartoons/Betty_Boop_Is_My_Palm_Read_1932_512kb.mp4" },
+        { title: "A Tale of Two Kitties", show: "Merrie Melodies", year: 1942, durationMins: 7,
+          directUrl: "https://archive.org/download/ltmm-publicdomain/A%20Tale%20of%20Two%20Kitties%20(1942).mp4" },
+        { title: "Somewhere in Dreamland", show: "Fleischer Color Classic", year: 1936, durationMins: 10,
+          directUrl: "https://archive.org/download/pdcartooncollection/Fleischer_Color_Classic_Somewhere_in_Dreamland_1936%29_old_cartoon_vintage_public_domain.mp4" },
+        { title: "Ali-Baba Bound", show: "Looney Tunes", year: 1940, durationMins: 7,
+          directUrl: "https://archive.org/download/ltmm-publicdomain/Ali-Baba%20Bound%20(1940).mp4" },
+      ]
+    },
+
+  ];
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // BROADCAST SCHEDULER
+  // Works out which episode is "on air" right now using real clock time,
+  // so everyone tuning in sees the same moment in the same episode.
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function getCurrentBroadcast(channel) {
+    const now = Math.floor(Date.now() / 1000);
+    const total = channel.playlist.reduce((s, ep) => s + ep.durationMins * 60, 0);
+    if (!total) return null;
+    const pos = now % total;
+    let elapsed = 0;
+    for (let i = 0; i < channel.playlist.length; i++) {
+      const ep  = channel.playlist[i];
+      const dur = ep.durationMins * 60;
+      if (pos < elapsed + dur) {
+        return { episode: ep, episodeIndex: i, startOffset: Math.floor(pos - elapsed), remainingSeconds: Math.floor(elapsed + dur - pos), channel };
+      }
+      elapsed += dur;
+    }
+    const ep0 = channel.playlist[0];
+    return { episode: ep0, episodeIndex: 0, startOffset: 0, remainingSeconds: ep0.durationMins * 60, channel };
+  }
+
+  function getScheduleForChannel(channel, hoursAhead = 3) {
+    const now   = Math.floor(Date.now() / 1000);
+    const end   = now + hoursAhead * 3600;
+    const total = channel.playlist.reduce((s, ep) => s + ep.durationMins * 60, 0);
+    const schedule = [];
+    let cursor = now - (now % total);
+    while (cursor < end) {
+      let off = 0;
+      for (const ep of channel.playlist) {
+        const s = cursor + off, e = s + ep.durationMins * 60;
+        if (e > now && s < end) schedule.push({ episode: ep, startTime: s, endTime: e, isCurrentlyAiring: s <= now && e > now });
+        off += ep.durationMins * 60;
+      }
+      cursor += total;
+    }
+    return schedule;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // APP STATE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  let currentChannelIndex = 0;
+  let currentEpisodeIndex = 0;
+  let remainingTimer      = null;
+  let tvOn                = false;
+  let currentVideoEl      = null;
+  let preloadVideoEl      = null;
+  let staticInProgress    = false;
+  let staticGeneration    = 0;
+
+  // Channel OSD timer
+  let osdChannelTimer = null;
+  // Now-playing OSD fade timer
+  let osdNpTimer = null;
+  // Number key entry
+  let chInputStr    = '';
+  let chInputTimer  = null;
+
+  // DOM refs
+  const $  = id => document.getElementById(id);
+  const screen     = $('tv-screen');
+  const playerCont = $('player-container');
+  const chDisplay  = $('ch-display');
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // POWER ON
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function powerOn() {
+    const overlay = $('power-on');
+    if (!overlay) return;
+    overlay.style.opacity = '0';
+    overlay.style.transition = 'opacity 0.4s';
+    setTimeout(() => overlay.remove(), 400);
+    tvOn = true;
+    setTimeout(() => $('power-led').classList.add('on'), 200);
+    tuneToChannel(0);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // STATIC (visual + audio)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  const staticCanvas = $('static-canvas');
+  const staticCtx    = staticCanvas.getContext('2d');
+  let   staticRAF    = null;
+
+  function startStatic() {
+    staticCanvas.width  = 120;
+    staticCanvas.height = 90;
+    staticCanvas.style.display = 'block';
+    const draw = () => {
+      const w = staticCanvas.width, h = staticCanvas.height;
+      const img = staticCtx.createImageData(w, h);
+      const d   = img.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const v = Math.random() * 255 | 0;
+        d[i] = d[i+1] = d[i+2] = v; d[i+3] = 255;
+      }
+      staticCtx.putImageData(img, 0, 0);
+      staticRAF = requestAnimationFrame(draw);
+    };
+    draw();
+  }
+
+  function stopStatic() {
+    if (staticRAF) { cancelAnimationFrame(staticRAF); staticRAF = null; }
+    staticCanvas.style.display = 'none';
+  }
+
+  let staticAudioCtx = null, staticNoiseNode = null, staticGainNode = null;
+
+  function startStaticAudio() {
+    try {
+      staticAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const sr = staticAudioCtx.sampleRate;
+      const buf = staticAudioCtx.createBuffer(1, sr * 2, sr);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      staticNoiseNode = staticAudioCtx.createBufferSource();
+      staticNoiseNode.buffer = buf;
+      staticNoiseNode.loop = true;
+      const filter = staticAudioCtx.createBiquadFilter();
+      filter.type = 'bandpass'; filter.frequency.value = 2000; filter.Q.value = 0.8;
+      staticGainNode = staticAudioCtx.createGain();
+      staticGainNode.gain.setValueAtTime(0, staticAudioCtx.currentTime);
+      staticGainNode.gain.linearRampToValueAtTime(0.25, staticAudioCtx.currentTime + 0.05);
+      staticNoiseNode.connect(filter); filter.connect(staticGainNode); staticGainNode.connect(staticAudioCtx.destination);
+      staticNoiseNode.start();
+    } catch(e) {}
+  }
+
+  function stopStaticAudio() {
+    const ctx = staticAudioCtx, node = staticNoiseNode, gain = staticGainNode;
+    staticAudioCtx = null; staticNoiseNode = null; staticGainNode = null;
+    if (!ctx) return;
+    try { if (gain) gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.05); } catch(e) {}
+    setTimeout(() => { try { node.stop(); } catch(e) {} try { ctx.close(); } catch(e) {} }, 60);
+  }
+
+  // flashStatic: shows static for ~3s, kicks off video loading during static
+  function flashStatic(loadFn, uiFn) {
+    if (remainingTimer) { clearInterval(remainingTimer); remainingTimer = null; }
+    if (currentVideoEl) { currentVideoEl.muted = true; currentVideoEl.pause(); }
+    playerCont.innerHTML = '';
+    currentVideoEl = null;
+    staticInProgress = true;
+    stopStaticAudio();
+    const myGen = ++staticGeneration;
+    startStatic();
+    startStaticAudio();
+    loadFn();
+    setTimeout(() => {
+      if (myGen !== staticGeneration) return;
+      stopStatic(); stopStaticAudio();
+      staticInProgress = false;
+      if (currentVideoEl && currentVideoEl.dataset.errored) {
+        showSignalLost('Video unavailable — skipping in 3s');
+        setTimeout(() => skipEpisode(), 3000);
+        return;
+      }
+      if (currentVideoEl) currentVideoEl.muted = false;
+      uiFn();
+    }, 3000);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // VIDEO LOADING
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function loadEpisode(episode, startOffset) {
+    hideSignalLost();
+    playerCont.innerHTML = '';
+    currentVideoEl = null;
+
+    const video = document.createElement('video');
+    video.muted = true;
+    video.playsInline = true;
+    video.controls = false;
+
+    video.addEventListener('loadedmetadata', () => {
+      if (startOffset > 1) video.currentTime = startOffset;
+      video.play().catch(() => {});
+    }, { once: true });
+
+    video.addEventListener('ended', () => skipEpisode(), { once: true });
+
+    video.addEventListener('error', () => {
+      if (staticInProgress) { video.dataset.errored = 'true'; return; }
+      showSignalLost('Video unavailable — skipping in 3s');
+      setTimeout(() => skipEpisode(), 3000);
+    }, { once: true });
+
+    video.src = episode.directUrl;
+    video.autoplay = true;
+    playerCont.appendChild(video);
+    currentVideoEl = video;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // CHANNEL TUNING
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function tuneToChannel(index) {
+    currentChannelIndex = ((index % CHANNELS.length) + CHANNELS.length) % CHANNELS.length;
+    const channel = CHANNELS[currentChannelIndex];
+
+    chDisplay.textContent = channel.number;
+    $('knob').style.transform = `rotate(${currentChannelIndex * (360 / CHANNELS.length)}deg)`;
+    clearPreload();
+
+    const bc = getCurrentBroadcast(channel);
+    if (!bc) return;
+    currentEpisodeIndex = bc.episodeIndex;
+
+    showChannelOSD(channel);
+
+    flashStatic(
+      () => loadEpisode(bc.episode, bc.startOffset),
+      () => { updateNowPlaying(channel, bc); startCountdown(channel, bc.remainingSeconds); showNowPlayingOSD(channel, bc); }
+    );
+  }
+
+  function changeChannel(direction) {
+    if (!tvOn) { powerOn(); return; }
+    tuneToChannel(currentChannelIndex + direction);
+  }
+
+  // Jump directly to a channel by its number
+  function tuneToChannelNumber(num) {
+    const idx = CHANNELS.findIndex(c => c.number === num);
+    if (idx >= 0) tuneToChannel(idx);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // EPISODE SKIP
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function skipEpisode() {
+    hideSignalLost();
+    const channel = CHANNELS[currentChannelIndex];
+    const nextIndex = (currentEpisodeIndex + 1) % channel.playlist.length;
+    const ep = channel.playlist[nextIndex];
+    currentEpisodeIndex = nextIndex;
+
+    const fakeBc = { episode: ep, episodeIndex: nextIndex, startOffset: 0, remainingSeconds: ep.durationMins * 60, channel };
+
+    flashStatic(
+      () => {
+        if (preloadVideoEl && preloadVideoEl.dataset.url === ep.directUrl) {
+          const v = preloadVideoEl; preloadVideoEl = null;
+          v.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:#000;';
+          v.muted = true; v.currentTime = 0;
+          playerCont.innerHTML = ''; playerCont.appendChild(v);
+          currentVideoEl = v;
+          v.play().catch(() => {});
+          v.addEventListener('ended', () => skipEpisode(), { once: true });
+        } else {
+          clearPreload();
+          loadEpisode(ep, 0);
+        }
+      },
+      () => { updateNowPlaying(channel, fakeBc); startCountdown(channel, ep.durationMins * 60); showNowPlayingOSD(channel, fakeBc); }
+    );
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // PRELOADING
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function preloadNextEpisode(channel, episodeIndex) {
+    const nextIdx = (episodeIndex + 1) % channel.playlist.length;
+    const nextEp  = channel.playlist[nextIdx];
+    if (!nextEp || !nextEp.directUrl) return;
+    if (preloadVideoEl && preloadVideoEl.dataset.url === nextEp.directUrl) return;
+    clearPreload();
+    const v = document.createElement('video');
+    v.dataset.url = nextEp.directUrl;
+    v.src = nextEp.directUrl;
+    v.preload = 'auto'; v.muted = true;
+    v.style.cssText = 'position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;left:-9999px;top:-9999px;';
+    document.body.appendChild(v);
+    preloadVideoEl = v;
+  }
+
+  function clearPreload() {
+    if (preloadVideoEl) { preloadVideoEl.src = ''; preloadVideoEl.remove(); preloadVideoEl = null; }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // NOW PLAYING — BAR + OSD
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function updateNowPlaying(channel, bc) {
+    const ep = bc.episode;
+    $('np-ch').textContent  = `CH ${channel.number}`;
+    $('np-ch').style.background = channel.color;
+    $('np-show').textContent  = ep.show;
+    $('np-title').textContent = ep.title;
+    $('np-year').textContent  = ep.year;
+    updateRemaining(bc.remainingSeconds);
+  }
+
+  function startCountdown(channel, secs) {
+    let s = secs, didPreload = false;
+    remainingTimer = setInterval(() => {
+      s--;
+      updateRemaining(s);
+      if (!didPreload && s === 60) { didPreload = true; preloadNextEpisode(channel, currentEpisodeIndex); }
+      if (s <= 0) {
+        clearInterval(remainingTimer);
+        const bc = getCurrentBroadcast(channel);
+        if (bc && bc.episodeIndex !== currentEpisodeIndex) {
+          currentEpisodeIndex = bc.episodeIndex;
+          loadEpisode(bc.episode, bc.startOffset);
+          updateNowPlaying(channel, bc); startCountdown(channel, bc.remainingSeconds);
+        }
+      }
+    }, 1000);
+  }
+
+  function updateRemaining(secs) {
+    const txt = secs > 0 ? `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')} left` : '';
+    $('np-rem').textContent = txt;
+    $('osd-np-rem').textContent = txt;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // OSD (On-Screen Display)
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function showChannelOSD(channel) {
+    $('osd-ch-num').textContent  = `CH ${String(channel.number).padStart(2, '0')}`;
+    $('osd-ch-name').textContent = channel.name;
+    const el = $('osd-channel');
+    el.classList.add('visible');
+    clearTimeout(osdChannelTimer);
+    osdChannelTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+  }
+
+  function showNowPlayingOSD(channel, bc) {
+    const ep = bc.episode;
+    $('osd-np-ch').textContent    = `CH ${channel.number}`;
+    $('osd-np-ch').style.background = channel.color;
+    $('osd-np-show').textContent  = ep.show;
+    $('osd-np-title').textContent = ep.title;
+    $('osd-np-year').textContent  = ep.year;
+    const el = $('osd-nowplaying');
+    el.classList.add('visible');
+    // Brief flash then fade — stays visible in fullscreen
+    requestAnimationFrame(() => { el.classList.add('show'); });
+    clearTimeout(osdNpTimer);
+    // In fullscreen, keep showing; out of fullscreen, hide after 5s
+    if (!document.fullscreenElement) {
+      osdNpTimer = setTimeout(() => el.classList.remove('show'), 5000);
+    }
+  }
+
+  document.addEventListener('fullscreenchange', () => {
+    const el = $('osd-nowplaying');
+    if (document.fullscreenElement) {
+      el.classList.add('visible', 'show');
+      clearTimeout(osdNpTimer);
+    } else {
+      osdNpTimer = setTimeout(() => el.classList.remove('show'), 5000);
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // SIGNAL LOST
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function showSignalLost(msg) {
+    $('signal-lost-sub').textContent = msg || 'Skipping...';
+    $('signal-lost').classList.add('visible');
+  }
+  function hideSignalLost() { $('signal-lost').classList.remove('visible'); }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // FULLSCREEN
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      screen.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen();
+    }
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // TV GUIDE
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function toggleGuide() {
+    const ol = $('guide-overlay');
+    const open = ol.classList.toggle('open');
+    if (open) renderGuide();
+  }
+
+  function handleGuideClick(e) {
+    if (e.target === $('guide-overlay')) toggleGuide();
+  }
+
+  function renderGuide() {
+    const body = $('guide-body');
+    body.innerHTML = CHANNELS.map((ch, idx) => {
+      const schedule = getScheduleForChannel(ch, 3);
+      const programs = schedule.slice(0, 4).map(s => {
+        const t = new Date(s.startTime * 1000);
+        const timeStr = t.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return `<div class="guide-program ${s.isCurrentlyAiring ? 'now-airing' : ''}">
+          <div class="guide-program-time">${s.isCurrentlyAiring ? '▶ NOW' : timeStr}</div>
+          <div class="guide-program-title">${s.episode.title}</div>
+          <div class="guide-program-show">${s.episode.show}</div>
+        </div>`;
+      }).join('');
+      const isActive = idx === currentChannelIndex;
+      return `<div class="guide-channel-row ${isActive ? 'active-ch' : ''}" onclick="selectFromGuide(${idx})">
+        <div class="guide-ch-label">
+          <div class="guide-ch-num" style="color:${ch.color};text-shadow:0 0 6px ${ch.color}40">${ch.number}</div>
+          <div class="guide-ch-name">${ch.name}</div>
+          <div class="guide-ch-era">${ch.era}</div>
+        </div>
+        <div class="guide-programs">${programs}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function selectFromGuide(index) {
+    toggleGuide();
+    tuneToChannel(index);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // KEYBOARD CONTROLS
+  // ─────────────────────────────────────────────────────────────────────────
+
+  document.addEventListener('keydown', e => {
+    if (!tvOn && e.key !== ' ' && e.key !== 'Enter') { powerOn(); return; }
+
+    // Number keys: accumulate digits, navigate after pause
+    if (e.key >= '0' && e.key <= '9') {
+      chInputStr += e.key;
+      $('ch-input-display').textContent = chInputStr;
+      $('ch-input-display').classList.add('visible');
+      clearTimeout(chInputTimer);
+      chInputTimer = setTimeout(() => {
+        const num = parseInt(chInputStr, 10);
+        chInputStr = '';
+        $('ch-input-display').classList.remove('visible');
+        tuneToChannelNumber(num);
+      }, 1500);
+      return;
+    }
+
+    // Clear number input on any non-digit key
+    if (chInputStr) {
+      chInputStr = ''; clearTimeout(chInputTimer);
+      $('ch-input-display').classList.remove('visible');
+    }
+
+    const guide = $('guide-overlay');
+    if (e.key === 'Escape' && guide.classList.contains('open')) { toggleGuide(); return; }
+
+    switch (e.key) {
+      case 'ArrowRight': case 'ArrowUp':   changeChannel(1);  break;
+      case 'ArrowLeft':  case 'ArrowDown': changeChannel(-1); break;
+      case 'g': case 'G': toggleGuide(); break;
+      case 'f': case 'F': toggleFullscreen(); break;
+      case 's': case 'S': if (tvOn) skipEpisode(); break;
+      case 'i': case 'I':
+        const ch = CHANNELS[currentChannelIndex];
+        const bc = getCurrentBroadcast(ch);
+        if (bc) showNowPlayingOSD(ch, bc);
+        break;
+    }
+  });
+  </script>
+
+</body>
+</html>
