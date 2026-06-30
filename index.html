@@ -1362,10 +1362,19 @@
   // ─────────────────────────────────────────────────────────────────────────
 
   function toggleFullscreen() {
+    // iOS Safari only supports fullscreen on the <video> element itself
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (isIOS && currentVideoEl) {
+      if (currentVideoEl.webkitEnterFullscreen) {
+        currentVideoEl.webkitEnterFullscreen();
+      }
+      return;
+    }
+    const el = $('tv-screen');
     if (!document.fullscreenElement) {
-      screen.requestFullscreen().catch(() => {});
+      (el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen).call(el);
     } else {
-      document.exitFullscreen();
+      (document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen).call(document);
     }
   }
 
